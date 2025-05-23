@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Emoji War — Powered by Qwen</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    html, body {
+      height: 100%; margin: 0; padding: 0;
+      background: linear-gradient(135deg, #f5f6fa 0%, #dde6f7 100%);
+      font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
+    }
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .card {
+      background: #fff;
+      border-radius: 20px;
+      box-shadow: 0 12px 36px #0001, 0 2px 8px #b8c8df22;
+      padding: 42px 40px 36px 40px;
+      min-width: 340px;
+      max-width: 96vw;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    h2 {
+      margin: 0 0 8px 0;
+      font-size: 2em;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      background: linear-gradient(90deg, #4886ff, #a665e6);
+      color: transparent;
+      -webkit-background-clip: text;
+      background-clip: text;
+    }
+    .score {
+      font-size: 1.2em;
+      margin-bottom: 18px;
+      color: #374070;
+      font-weight: 600;
+    }
+    .hands {
+      display: flex; flex-direction: column; align-items: center; gap: 16px;
+    }
+    .hand-label {
+      font-size: 1.05em;
+      color: #858db1;
+      margin-bottom: 4px;
+    }
+    .emoji-hand {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+    button.emoji-btn {
+      font-size: 2.1em;
+      padding: 9px 20px;
+      border-radius: 10px;
+      border: none;
+      background: #e8eafd;
+      cursor: pointer;
+      transition: box-shadow 0.18s, transform 0.09s, background 0.2s;
+      box-shadow: 0 2px 8px #0001;
+    }
+    button.emoji-btn:active {
+      background: #d2d7f2;
+      transform: scale(0.97);
+    }
+    button.emoji-btn:disabled {
+      opacity: 0.5; cursor: not-allowed;
+    }
+    .ai-hand {
+      font-size: 1.4em;
+      color: #888aaf;
+      letter-spacing: 3px;
+      min-height: 48px;
+    }
+    .battle-area {
+      margin: 26px 0 12px 0;
+      font-size: 3em;
+      font-weight: 700;
+      background: #fafdff;
+      border-radius: 16px;
+      padding: 18px 24px;
+      box-shadow: 0 1.5px 10px #abc3ec22;
+      min-width: 240px;
+      text-align: center;
+    }
+    .reason {
+      font-size: 1.18em;
+      color: #3a3c5b;
+      margin-top: 14px;
+      white-space: pre-line;
+      word-break: break-word;
+      overflow-wrap: break-word;
+      max-width: 420px;
+      min-height: 2.6em;
+      text-align: center;
+      background: #f3f6fa;
+      border-radius: 12px;
+      padding: 13px 18px;
+      box-shadow: 0 1.5px 8px #b6c1df22;
+    }
+    @media (max-width: 600px) {
+      .card { padding: 8vw 2vw; }
+      .battle-area { min-width: 0; font-size: 2.1em; }
+      .reason { max-width: 99vw; font-size: 1em;}
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Emoji War</h2>
+    <div class="score" id="score">You: 0 — AI: 0</div>
+    <div class="hands">
+      <div>
+        <div class="hand-label">Your Hand</div>
+        <div class="emoji-hand" id="yourHand"></div>
+      </div>
+      <div>
+        <div class="hand-label">AI Hand</div>
+        <div class="ai-hand" id="aiHand"></div>
+      </div>
+    </div>
+    <div class="battle-area" id="battlefield">Choose an emoji to start the battle!</div>
+    <div class="reason" id="reason"></div>
+  </div>
+  <script>
+    // Animal emoji pool
+    const EMOJI_POOL = ["🦁","🐯","🐻","🐼","🐨","🐵","🦊","🐺","🐮","🐸","🐔","🐧","🐘","🦒","🦄","🐍","🐢","🐬","🐳","🦅"];
+
+    // Shuffle helper
+    function shuffle(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    let yourHand = shuffle([...EMOJI_POOL]).slice(0,5);
+    let aiHand = shuffle([...EMOJI_POOL]).slice(0,5);
+    let yourScore = 0, aiScore = 0;
+
+    const yourHandDiv = document.getElementById('yourHand');
+    const aiHandDiv = document.getElementById('aiHand');
+    const battlefieldDiv = document.getElementById('battlefield');
+    const reasonDiv = document.getElementById('reason');
+    const scoreDiv = document.getElementById('score');
+
+    function renderHands() {
+      yourHandDiv.innerHTML = yourHand.map((e,i) =>
+        `<button class="emoji-btn" onclick="playEmoji(${i})">${e}</button>`).join('');
+      aiHandDiv.innerHTML = aiHand.map(e => `<span>${e}</span>`).join('');
+    }
+
+    function updateScore() {
+      scoreDiv.textContent = `You: ${yourScore} — AI: ${aiScore}`;
+    }
+
+    window.playEmoji = async function(idx) {
+      const yourEmoji = yourHand[idx];
+      yourHand.splice(idx, 1);
+      // AI picks random emoji
+      const aiIdx = Math.floor(Math.random() * aiHand.length);
+      const aiEmoji = aiHand[aiIdx];
+      aiHand.splice(aiIdx, 1);
+
+      renderHands();
+      battlefieldDiv.innerHTML = `<span style="color:#4183ff;">${yourEmoji}</span>  VS  <span style="color:#a362e6;">${aiEmoji}</span>`;
+      reasonDiv.textContent = "Judging battle...";
+
+      // Call Qwen to judge
+      const API_KEY = ""; // <--- Insert your Cerebras API key
+      const url = 'https://api.cerebras.ai/v1/chat/completions';
+      const messages = [
+        {
+          "role": "system",
+          "content": "You are an emoji battle judge. The user played the first emoji, the AI played the second. Based on their meaning, character, or powers, which emoji wins this round? Output only the winner emoji, then a newline, then a short, fun reason."
+        },
+        {
+          "role": "user",
+          "content": `Battle: ${yourEmoji} vs ${aiEmoji} /no_think`
+        }
+      ];
+      const payload = {
+        model: "qwen-3-32b",
+        max_tokens: 64, // plenty for fun reasons!
+        temperature: 0.7,
+        top_p: 0.95,
+        messages: messages
+      };
+      try {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${API_KEY}`
+          },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        let result = (data.choices?.[0]?.message?.content || '').replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+
+        // Debug: print Qwen output
+        console.log("Qwen full response:", result);
+
+        let lines = result.split('\n').filter(line => line.trim().length > 0);
+        let winnerEmoji = lines[0]?.trim() || '';
+        let reason = lines.slice(1).join('\n').trim();
+        let msg = '';
+        if (winnerEmoji === yourEmoji) {
+          yourScore++;
+          msg = "🎉 You win the round!";
+        } else if (winnerEmoji === aiEmoji) {
+          aiScore++;
+          msg = "🤖 AI wins the round!";
+        } else {
+          msg = "🤔 It's a tie!";
+        }
+        updateScore();
+        reasonDiv.innerHTML = `<b>${msg}</b><br>${reason.replace(/\n/g, '<br>')}`;
+      } catch (e) {
+        reasonDiv.textContent = "API Error: " + e;
+      }
+
+      // End game if hands empty
+      if (yourHand.length === 0) {
+        let final = (yourScore > aiScore) ? "🏆 You win the game!" :
+                   (yourScore < aiScore) ? "🤖 AI wins the game!" : "🤝 It's a draw!";
+        setTimeout(() => {
+          alert(`Game Over!\n\n${final}\n\nScore: You ${yourScore} — AI ${aiScore}`);
+          location.reload();
+        }, 1100);
+      }
+    }
+
+    renderHands();
+    updateScore();
+  </script>
+</body>
+</html>
