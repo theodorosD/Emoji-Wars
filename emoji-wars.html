@@ -135,7 +135,24 @@
   </div>
   <script>
     // Animal emoji pool
-    const EMOJI_POOL = ["🦁","🐯","🐻","🐼","🐨","🐵","🦊","🐺","🐮","🐸","🐔","🐧","🐘","🦒","🦄","🐍","🐢","🐬","🐳","🦅"];
+      const EMOJI_POOL = [
+        // Animals
+        "🦁", "🐼", "🐸", "🦄", "🦊", "🐬", "🐧", "🦅", "🐢",
+        // Food
+        "🍕", "🍔", "🍉", "🍓", "🍩", "🍦", "🍪", "🍎", "🥑",
+        // Fantasy/Magic
+        "🧙‍♂️", "🐉", "🔮", "🧚‍♀️", "🧞‍♂️",
+        // Vehicles/Transport
+        "🚗", "🏎️", "🚑", "✈️", "🚁", "🚲",
+        // Sports
+        "⚽", "🏀", "🏆", "🎯", "🥊",
+        // Nature
+        "🌲", "🌊", "🌈", "⛰️", "🌙", "🌞",
+        // Expressions/Faces
+        "😀", "😂", "😎", "😱", "😇", "🥶", "🥳", "😍"
+      ];
+
+
 
     // Power-up emoji pool
     const POWER_UP_POOL = [
@@ -229,7 +246,7 @@
       const messages = [
         {
           "role": "system",
-          "content": "You are an emoji battle judge. The user played the first emoji, the AI played the second. Based on their meaning, character, or powers, which emoji wins this round? Output only the winner emoji, then a newline, then a short, fun reason."
+          "content": "You are an emoji battle judge. The user played the first emoji, the AI played the second. Always refer to emojis by their Unicode name. Decide clearly if the battle is a tie, or which emoji wins. If it is a tie, output only the word 'Tie' on the first line, then a newline, then a short, fun reason for the tie. If there is a winner, output only the winner emoji on the first line, then a newline, then a short, fun reason. Never use both 'tie' and a winner in the same answer. Examples: 🐳 vs 🐼 => 🐳 Tie ",
         },
         {
           "role": "user",
