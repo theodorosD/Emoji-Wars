@@ -120,10 +120,14 @@
       <div>
         <div class="hand-label">Your Hand</div>
         <div class="emoji-hand" id="yourHand"></div>
+        <div class="hand-label">Your Power-Up</div>
+        <div class="emoji-hand" id="yourPowerUp"></div>
       </div>
       <div>
         <div class="hand-label">AI Hand</div>
         <div class="ai-hand" id="aiHand"></div>
+        <div class="hand-label">AI Power-Up</div>
+        <div class="ai-hand" id="aiPowerUp"></div>
       </div>
     </div>
     <div class="battle-area" id="battlefield">Choose an emoji to start the battle!</div>
@@ -132,6 +136,12 @@
   <script>
     // Animal emoji pool
     const EMOJI_POOL = ["🦁","🐯","🐻","🐼","🐨","🐵","🦊","🐺","🐮","🐸","🐔","🐧","🐘","🦒","🦄","🐍","🐢","🐬","🐳","🦅"];
+
+    // Power-up emoji pool
+    const POWER_UP_POOL = [
+      "🧙‍♂️","🧚‍♀️","🧞‍♂️","🧟‍♂️","🧝‍♀️","🐉","🦄","🗡️","🛡️","🔮",
+      "🏹","🔥","❄️","⚡","🌪️","👑","🧙‍♀️","🦸‍♂️","🧜‍♀️","🐲"
+    ];
 
     // Shuffle helper
     function shuffle(arr) {
@@ -146,17 +156,45 @@
     let aiHand = shuffle([...EMOJI_POOL]).slice(0,5);
     let yourScore = 0, aiScore = 0;
 
+    // Assign power-up emojis distinct from hands
+    let yourPowerUp = null;
+    let aiPowerUp = null;
+    let usePowerUp = false;
+
     const yourHandDiv = document.getElementById('yourHand');
     const aiHandDiv = document.getElementById('aiHand');
+    const yourPowerUpDiv = document.getElementById('yourPowerUp');
+    const aiPowerUpDiv = document.getElementById('aiPowerUp');
     const battlefieldDiv = document.getElementById('battlefield');
     const reasonDiv = document.getElementById('reason');
     const scoreDiv = document.getElementById('score');
+
+    function assignPowerUps() {
+      // Filter out emojis already in hands
+      const usedEmojis = new Set([...yourHand, ...aiHand]);
+      const available = POWER_UP_POOL.filter(e => !usedEmojis.has(e));
+      yourPowerUp = available[Math.floor(Math.random() * available.length)];
+      aiPowerUp = available[Math.floor(Math.random() * available.length)];
+    }
 
     function renderHands() {
       yourHandDiv.innerHTML = yourHand.map((e,i) =>
         `<button class="emoji-btn" onclick="playEmoji(${i})">${e}</button>`).join('');
       // Show AI hand as face-down cards
       aiHandDiv.innerHTML = aiHand.map(_ => `<span>🂠</span>`).join('');
+      // Render power-ups
+      yourPowerUpDiv.innerHTML = yourPowerUp ? `<button class="emoji-btn" id="usePowerUpBtn" title="Click to toggle power-up usage">${yourPowerUp}</button>` : '';
+      aiPowerUpDiv.innerHTML = aiPowerUp ? `<span>${aiPowerUp}</span>` : '';
+
+      // Add event listener for power-up toggle button
+      const powerUpBtn = document.getElementById('usePowerUpBtn');
+      if (powerUpBtn) {
+        powerUpBtn.onclick = () => {
+          usePowerUp = !usePowerUp;
+          powerUpBtn.style.background = usePowerUp ? '#a665e6' : '#e8eafd';
+          powerUpBtn.style.color = usePowerUp ? 'white' : 'black';
+        };
+      }
     }
 
     function updateScore() {
@@ -164,12 +202,23 @@
     }
 
     window.playEmoji = async function(idx) {
-      const yourEmoji = yourHand[idx];
+      let yourEmoji = yourHand[idx];
       yourHand.splice(idx, 1);
       // AI picks random emoji
       const aiIdx = Math.floor(Math.random() * aiHand.length);
-      const aiEmoji = aiHand[aiIdx];
+      let aiEmoji = aiHand[aiIdx];
       aiHand.splice(aiIdx, 1);
+
+      // Combine with power-ups if used
+      if (usePowerUp && yourPowerUp) {
+        yourEmoji += yourPowerUp;
+        yourPowerUp = null; // power-up used
+      }
+      // AI uses power-up randomly (50% chance) if it has one
+      if (aiPowerUp && Math.random() < 0.5) {
+        aiEmoji += aiPowerUp;
+        aiPowerUp = null; // power-up used
+      }
 
       renderHands();
       battlefieldDiv.innerHTML = `<span style="color:#4183ff;">${yourEmoji}</span>  VS  <span style="color:#a362e6;">${aiEmoji}</span>`;
@@ -189,7 +238,7 @@
       ];
       const payload = {
         model: "qwen-3-32b",
-        max_tokens: 64, 
+        max_tokens: 64,
         temperature: 0.7,
         top_p: 0.95,
         messages: messages
@@ -239,6 +288,7 @@
       }
     }
 
+    assignPowerUps();
     renderHands();
     updateScore();
   </script>
