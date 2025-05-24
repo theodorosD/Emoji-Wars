@@ -14,7 +14,7 @@ You and Qwen each get a hand of wild emojis (from lions to laptops to pizza). Pl
 
 **Tech**
 - HTML + JS (no frameworks)
-- **Cerebras Qwen-3** via OpenRouter
+- **Cerebras Qwen-3** 
 - Judges keep their API keys safe
 
 **With more time we’d add…**
