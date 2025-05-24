@@ -155,7 +155,8 @@
     function renderHands() {
       yourHandDiv.innerHTML = yourHand.map((e,i) =>
         `<button class="emoji-btn" onclick="playEmoji(${i})">${e}</button>`).join('');
-      aiHandDiv.innerHTML = aiHand.map(e => `<span>${e}</span>`).join('');
+      // Show AI hand as face-down cards
+      aiHandDiv.innerHTML = aiHand.map(_ => `<span>🂠</span>`).join('');
     }
 
     function updateScore() {
@@ -175,7 +176,6 @@
       reasonDiv.textContent = "Judging battle...";
 
       // Call Qwen to judge
-      const API_KEY = ""; // <--- Insert your Cerebras API key
       const url = 'https://api.cerebras.ai/v1/chat/completions';
       const messages = [
         {
@@ -189,7 +189,7 @@
       ];
       const payload = {
         model: "qwen-3-32b",
-        max_tokens: 64, // plenty for fun reasons!
+        max_tokens: 64, 
         temperature: 0.7,
         top_p: 0.95,
         messages: messages
